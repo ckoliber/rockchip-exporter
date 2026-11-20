@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>ckoliber/.github"],
+  "packageRules": [
+    {
+      "description": "Group all Go updates together",
+      "matchManagers": ["mise", "gomod", "dockerfile"],
+      "matchDepNames": ["go", "golang"],
+      "rangeStrategy": "bump",
+      "groupName": "Go updates"
+    }
+  ]
+}

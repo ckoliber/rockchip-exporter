@@ -1,0 +1,19 @@
+include = [
+  "git::ssh://git@github.com/ckoliber/.github.git//default.toml?ref=main",
+  "git::ssh://git@github.com/ckoliber/.github.git//docker.toml?ref=main",
+]
+task_config.includes = [
+  "git::ssh://git@github.com/ckoliber/.github.git//tasks?ref=main",
+]
+
+[tools]
+go = "1.27.3"
+
+[tasks."go:deps"]
+run = "go mod download"
+
+[tasks."go:test"]
+run = "go test ./..."
+
+[tasks."go:build"]
+run = "go build"

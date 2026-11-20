@@ -1,0 +1,25 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  cicd:
+    uses: ckoliber/.github/.github/workflows/mise.yml@main
+    permissions:
+      contents: write
+      packages: write
+    with:
+      fetch-depth: 0
+      cache-tools: go
+      script: |
+        mise run go:deps
+        mise run go:test
+        mise run docker:lint
+        mise run docker:login
+        mise run docker:build --version "$(mise run release:cliff --dry-run)"
+        if [ "$GITHUB_EVENT_NAME" = push ]; then mise run release:cliff; fi
