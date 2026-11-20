@@ -16,4 +16,9 @@ run = "go mod download"
 run = "go test ./..."
 
 [tasks."go:build"]
-run = "go build"
+env = { CGO_ENABLED = "0", GOOS = "linux", GOARM = "7" }
+run = """
+for arch in amd64 arm64 arm; do
+  GOARCH=$arch go build -trimpath -ldflags="-s -w" -o dist/rockchip-exporter-linux-$arch .
+done
+"""
