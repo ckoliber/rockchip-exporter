@@ -6,6 +6,9 @@ task_config.includes = [
   "git::ssh://git@github.com/ckoliber/.github.git//tasks?ref=main",
 ]
 
+[env]
+DOCKER_PLATFORMS = "linux/amd64,linux/arm64,linux/arm/v7"
+
 [tools]
 go = "1.27.3"
 
@@ -16,9 +19,13 @@ run = "go mod download"
 run = "go test ./..."
 
 [tasks."go:build"]
-env = { CGO_ENABLED = "0", GOOS = "linux", GOARM = "7" }
+env = { CGO_ENABLED = "0", GOOS = "linux", GOARM = "7", GOFLAGS = "-trimpath -ldflags=-s" }
 run = """
-for arch in amd64 arm64 arm; do
-  GOARCH=$arch go build -trimpath -ldflags="-s -w" -o dist/rockchip-exporter-linux-$arch .
+rm -rf dist && mkdir dist && cd dist
+for arch in amd64 arm64 armv7; do
+  name=rockchip-exporter-${VERSION:?}.linux-$arch
+  GOARCH=${arch%v7} go build -o $name/ .. && cp ../README.md $name/
+  tar -czf $name.tar.gz $name && rm -r $name
 done
+sha256sum *.tar.gz > sha256sums.txt
 """

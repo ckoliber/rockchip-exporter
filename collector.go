@@ -27,7 +27,7 @@ var (
 	devfreqMaxFrequency = prometheus.NewDesc(namespace+"_devfreq_max_frequency_hertz",
 		"Maximum frequency of a devfreq device.", []string{"device"}, nil)
 	devfreqLoad = prometheus.NewDesc(namespace+"_devfreq_load_ratio",
-		"Load of a devfreq device, from 0 to 1 (Rockchip BSP kernels only).", []string{"device"}, nil)
+		"Load of a devfreq device, from 0 to 1 (Mali GPU on Rockchip BSP kernels only).", []string{"device"}, nil)
 	devfreqInfo = prometheus.NewDesc(namespace+"_devfreq_info",
 		"Governor of a devfreq device.", []string{"device", "governor"}, nil)
 
@@ -44,11 +44,10 @@ var (
 )
 
 var (
-	devfreqLoadRe = regexp.MustCompile(`^(\d+)@`)
-	npuCoreRe     = regexp.MustCompile(`Core(\d+):\s*(\d+)%`)
-	npuSingleRe   = regexp.MustCompile(`(\d+)%`)
-	rgaSchedRe    = regexp.MustCompile(`scheduler\[(\d+)\]:\s*(\S+)`)
-	rgaLoadRe     = regexp.MustCompile(`load\s*=\s*(\d+)%`)
+	npuCoreRe   = regexp.MustCompile(`Core(\d+):\s*(\d+)%`)
+	npuSingleRe = regexp.MustCompile(`(\d+)%`)
+	rgaSchedRe  = regexp.MustCompile(`scheduler\[(\d+)\]:\s*(\S+)`)
+	rgaLoadRe   = regexp.MustCompile(`load\s*=\s*(\d+)%`)
 )
 
 // Collector reads Rockchip metrics not covered by node_exporter on every scrape.
@@ -101,9 +100,10 @@ func (c *Collector) collectDevfreq(ch chan<- prometheus.Metric) {
 				ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, v, device)
 			}
 		}
-		// Format: "<percent>@<freq>Hz"
-		if m := devfreqLoadRe.FindStringSubmatch(read(filepath.Join(dir, "load"))); m != nil {
-			v, _ := strconv.ParseFloat(m[1], 64)
+		// Format: "<percent>", averaged over utilisation_period ms by the Mali kbase driver.
+		// devfreq "load" is not used: drivers without busy tracking (NPU, VENC, VOP) report 100,
+		// and DMC load depends on the time since the last read.
+		if v, ok := parseFloat(read(filepath.Join(dir, "device/utilisation"))); ok {
 			ch <- prometheus.MustNewConstMetric(devfreqLoad, prometheus.GaugeValue, v/100, device)
 		}
 		if governor := read(filepath.Join(dir, "governor")); governor != "" {
@@ -113,14 +113,13 @@ func (c *Collector) collectDevfreq(ch chan<- prometheus.Metric) {
 }
 
 func (c *Collector) collectNPU(ch chan<- prometheus.Metric) {
-	dir := filepath.Join(c.DebugFS, "rknpu")
 	// Format: "RKNPU driver: v0.9.8"
-	if version := read(filepath.Join(dir, "version")); version != "" {
+	if version := c.readDriver("rknpu", "version"); version != "" {
 		version = strings.TrimSpace(version[strings.LastIndex(version, ":")+1:])
 		ch <- prometheus.MustNewConstMetric(npuInfo, prometheus.GaugeValue, 1, version)
 	}
 	// Format: "NPU load:  Core0:  5%, Core1:  0%, Core2:  0%," or "NPU load:  5%"
-	load := read(filepath.Join(dir, "load"))
+	load := c.readDriver("rknpu", "load")
 	if cores := npuCoreRe.FindAllStringSubmatch(load, -1); cores != nil {
 		for _, m := range cores {
 			v, _ := strconv.ParseFloat(m[2], 64)
@@ -135,7 +134,7 @@ func (c *Collector) collectNPU(ch chan<- prometheus.Metric) {
 func (c *Collector) collectRGA(ch chan<- prometheus.Metric) {
 	// Format: "scheduler[0]: rga3_core0" followed by "load = 5%"
 	var scheduler, core string
-	sc := bufio.NewScanner(strings.NewReader(read(filepath.Join(c.DebugFS, "rkrga/load"))))
+	sc := bufio.NewScanner(strings.NewReader(c.readDriver("rkrga", "load")))
 	for sc.Scan() {
 		if m := rgaSchedRe.FindStringSubmatch(sc.Text()); m != nil {
 			scheduler, core = m[1], m[2]
@@ -154,6 +153,14 @@ func (c *Collector) collectRegulators(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(regulatorVoltage, prometheus.GaugeValue, v/1e6, name)
 		}
 	}
+}
+
+// readDriver reads a file of a Rockchip driver from debugfs, or from procfs on kernels built with its PROC_FS option.
+func (c *Collector) readDriver(driver, file string) string {
+	if s := read(filepath.Join(c.DebugFS, driver, file)); s != "" {
+		return s
+	}
+	return read(filepath.Join(c.ProcFS, driver, file))
 }
 
 // read returns the trimmed file content, or "" when it is missing or unreadable.

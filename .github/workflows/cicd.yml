@@ -15,10 +15,11 @@ jobs:
       fetch-depth: 0
       cache-tools: go
       script: |
+        export VERSION="$(mise run release:cliff --dry-run)"
         mise run go:deps
         mise run go:test
         mise run go:build
         mise run docker:lint
         mise run docker:login
-        mise run docker:build --version "$(mise run release:cliff --dry-run)"
+        mise run docker:build
         if [ "$GITHUB_EVENT_NAME" = push ]; then mise run release:cliff dist/*; fi
