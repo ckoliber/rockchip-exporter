@@ -28,7 +28,7 @@ run = """
 rm -rf dist && mkdir dist && cd dist
 for arch in amd64 arm64 armv7; do
   name=rockchip-exporter-${VERSION:?}.linux-$arch
-  GOARCH=${arch%v7} go build -o $name/ .. && cp ../README.md $name/
+  GOARCH=${arch%v7} go build -o $name/ .. && cp ../*.md $name/
   tar -czf $name.tar.gz $name && rm -r $name
 done
 sha256sum *.tar.gz > sha256sums.txt

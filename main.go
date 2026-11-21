@@ -18,7 +18,9 @@ func main() {
 	flag.StringVar(&c.SysFS, "path.sysfs", "/sys", "sysfs mountpoint")
 	flag.StringVar(&c.ProcFS, "path.procfs", "/proc", "procfs mountpoint")
 	flag.StringVar(&c.DebugFS, "path.debugfs", "/sys/kernel/debug", "debugfs mountpoint (NPU and RGA load, needs root)")
+	vpuInterval := flag.Int("collector.vpu.load-interval", 1000, "MPP load interval in ms to set when unset, to measure VPU load (needs root, 0 leaves it)")
 	flag.Parse()
+	c.EnableVPULoad(*vpuInterval)
 
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(c, collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
