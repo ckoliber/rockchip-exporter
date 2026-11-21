@@ -1,16 +1,19 @@
 include = [
   "git::ssh://git@github.com/ckoliber/.github.git//default.toml?ref=main",
-  "git::ssh://git@github.com/ckoliber/.github.git//docker.toml?ref=main",
 ]
 task_config.includes = [
   "git::ssh://git@github.com/ckoliber/.github.git//tasks?ref=main",
 ]
 
 [env]
-DOCKER_PLATFORMS = "linux/amd64,linux/arm64,linux/arm/v7"
+CGO_ENABLED = "0"
+GOFLAGS = "-trimpath -ldflags=-s"
+KO_DOCKER_REPO = "ghcr.io/ckoliber/rockchip-exporter"
+KO_DEFAULTPLATFORMS = "linux/amd64,linux/arm64"
 
 [tools]
 go = "1.27.3"
+ko = "0.19.1"
 
 [tasks."go:deps"]
 run = "go mod download"
@@ -19,7 +22,7 @@ run = "go mod download"
 run = "go test ./..."
 
 [tasks."go:build"]
-env = { CGO_ENABLED = "0", GOOS = "linux", GOARM = "7", GOFLAGS = "-trimpath -ldflags=-s" }
+env = { GOOS = "linux", GOARM = "7" }
 run = """
 rm -rf dist && mkdir dist && cd dist
 for arch in amd64 arm64 armv7; do
@@ -29,3 +32,9 @@ for arch in amd64 arm64 armv7; do
 done
 sha256sum *.tar.gz > sha256sums.txt
 """
+
+[tasks."ko:login"]
+run = 'gh auth token | ko login ghcr.io -u "${GITHUB_ACTOR:-$(gh api user --jq .login)}" --password-stdin'
+
+[tasks."ko:build"]
+run = "ko build --bare --tags ${VERSION:?} ."

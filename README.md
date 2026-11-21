@@ -28,7 +28,7 @@ The exporter reads generic kernel interfaces and skips missing ones, so it runs 
 | `rockchip_npu_*`                            | RKNPU2 driver                                             | RK3562, RK356x, RK3576, RK3588                         |
 | `rockchip_rga_load_ratio`                   | multicore RGA driver (BSP 5.10 or newer)                  | RK356x, RK3576, RK3588                                 |
 
-NPU and RGA files are read from debugfs (needs root), or from `/proc/rknpu` and `/proc/rkrga` on kernels built with `CONFIG_ROCKCHIP_RKNPU_PROC_FS` and `CONFIG_ROCKCHIP_RGA_PROC_FS`. Binaries and images are built for `amd64`, `arm64` and `armv7`. Tested on RK3588 (FriendlyElec CM3588, Rockchip BSP 6.1).
+NPU and RGA files are read from debugfs (needs root), or from `/proc/rknpu` and `/proc/rkrga` on kernels built with `CONFIG_ROCKCHIP_RKNPU_PROC_FS` and `CONFIG_ROCKCHIP_RGA_PROC_FS`. Binaries are built for `amd64`, `arm64` and `armv7`, images for `amd64` and `arm64`. Tested on RK3588 (FriendlyElec CM3588, Rockchip BSP 6.1).
 
 ## Usage
 

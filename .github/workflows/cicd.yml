@@ -19,7 +19,6 @@ jobs:
         mise run go:deps
         mise run go:test
         mise run go:build
-        mise run docker:lint
-        mise run docker:login
-        mise run docker:build
+        mise run ko:login
+        mise run ko:build
         if [ "$GITHUB_EVENT_NAME" = push ]; then mise run release:cliff dist/*; fi
