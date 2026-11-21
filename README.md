@@ -57,6 +57,10 @@ sudo ./rockchip-exporter-$VERSION.linux-arm64/rockchip-exporter
 
 Flags: `--web.listen-address` (`:9988`), `--web.telemetry-path` (`/metrics`), `--path.procfs`, `--path.sysfs`, `--path.debugfs`, `--collector.vpu.load-interval` (`1000`, `0` leaves it unset).
 
+## Grafana
+
+Import [`grafana/dashboard.json`](grafana/dashboard.json) and pick the Prometheus data source that holds the metrics.
+
 ## Development
 
 ```sh
