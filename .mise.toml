@@ -9,7 +9,8 @@ task_config.includes = [
 CGO_ENABLED = "0"
 GOFLAGS = "-trimpath -ldflags=-s"
 KO_DOCKER_REPO = "ghcr.io/ckoliber/rockchip-exporter"
-KO_DEFAULTPLATFORMS = "linux/amd64,linux/arm64"
+KO_DEFAULTPLATFORMS = "linux/amd64,linux/arm64,linux/arm/v7"
+KO_DEFAULTBASEIMAGE = "gcr.io/distroless/static-debian13"
 
 [tools]
 go = "1.27.3"
